@@ -99,7 +99,7 @@ void I_StartFrame (void)
 
 int I_StartDisplay(void)
 {
-	// spi_lcd_wait_finish();
+	spi_lcd_wait_finish();
   return true;
 }
 
@@ -131,7 +131,7 @@ void I_FinishUpdate (void)
 	}
 #endif
 #if 1
-	// spi_lcd_send(scr);
+	spi_lcd_send(scr);
 #endif
 	//Flip framebuffers
 //	if (scr==screena) screens[0].data=screenb; else screens[0].data=screena;
@@ -141,17 +141,30 @@ int16_t lcdpal[256];
 
 void I_SetPalette (int pal)
 {
-	int i, r, g, b, v;
-	int pplump = W_GetNumForName("PLAYPAL");
-	const byte * palette = W_CacheLumpNum(pplump);
-	palette+=pal*(3*256);
-	for (i=0; i<255 ; i++) {
-		v=((palette[0]>>3)<<11)+((palette[1]>>2)<<5)+(palette[2]>>3);
-		lcdpal[i]=(v>>8)+(v<<8);
-//		lcdpal[i]=v;
-		palette += 3;
-	}
-	W_UnlockLumpNum(pplump);
+    double gamma = 0.75;
+    int i, r, g, b, v;
+    int pplump = W_GetNumForName("PLAYPAL");
+    const byte *palette = W_CacheLumpNum(pplump);
+    palette += pal * (3 * 256);
+    
+    for (i = 0; i < 255; i++) {
+        // Applying brightness factor to each component
+        r = (int)(pow((palette[0] / 255.0), gamma) * 255);
+        g = (int)(pow((palette[1] / 255.0), gamma) * 255);
+        b = (int)(pow((palette[2] / 255.0), gamma) * 255);
+
+
+        // Clamping the values to [0, 255]
+        r = r > 255 ? 255 : (r < 0 ? 0 : r);
+        g = g > 255 ? 255 : (g < 0 ? 0 : g);
+        b = b > 255 ? 255 : (b < 0 ? 0 : b);
+
+        v = ((r >> 3) << 11) + ((g >> 2) << 5) + (b >> 3);
+        lcdpal[i] = (v >> 8) + (v << 8);
+        palette += 3;
+    }
+    
+    W_UnlockLumpNum(pplump);
 }
 
 
@@ -164,7 +177,7 @@ void I_PreInitGraphics(void)
 {
 	lprintf(LO_INFO, "preinitgfx");
 #ifdef INTERNAL_MEM_FB
-	screenbuf=malloc(320*240);
+	screenbuf=ps_malloc(SCREENWIDTH * SCREENHEIGHT);
 	assert(screenbuf);
 #endif
 }
@@ -208,7 +221,7 @@ void I_SetRes(void)
   assert(screens[0].data);
 #endif
 
-//  spi_lcd_init();
+  spi_lcd_init();
 
   lprintf(LO_INFO,"I_SetRes: Using resolution %dx%d\n", SCREENWIDTH, SCREENHEIGHT);
 }

@@ -857,6 +857,7 @@ static void IdentifyVersion (void)
     if (gamemode == indetermined)
       //jff 9/3/98 use logical output routine
       lprintf(LO_WARN,"Unknown Game Version, may not work\n");
+    D_AddFile("prboom.wad",source_pre);
     D_AddFile(iwad,source_iwad);
     free(iwad);
   }

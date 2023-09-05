@@ -387,23 +387,38 @@ void *(Z_Malloc)(size_t size, int tag, void **user
     block = NULL;
   }
 
-#ifdef HAVE_LIBDMALLOC
-  while (!(block = dmalloc_malloc(file,line,size + HEADER_SIZE,DMALLOC_FUNC_MALLOC,0,0))) {
-#else
-  while (!(block = (malloc)(size + HEADER_SIZE))) {
-#endif
-    if (!blockbytag[PU_CACHE])
-      I_Error ("Z_Malloc: Failure trying to allocate %lu bytes"
-#ifdef INSTRUMENTED
-               "\nSource: %s:%d"
-#endif
-               ,(unsigned long) size
-#ifdef INSTRUMENTED
-               , file, line
-#endif
-      );
-    Z_FreeTags(PU_CACHE,PU_CACHE);
+// #ifdef HAVE_LIBDMALLOC
+//   while (!(block = dmalloc_malloc(file,line,size + HEADER_SIZE,DMALLOC_FUNC_MALLOC,0,0))) {
+// #else
+//   while (!(block = ps_malloc(size + HEADER_SIZE))) {
+// #endif
+//     if (!blockbytag[PU_CACHE])
+//       I_Error ("Z_Malloc: Failure trying to allocate %lu bytes"
+// #ifdef INSTRUMENTED
+//                "\nSource: %s:%d"
+// #endif
+//                ,(unsigned long) size
+// #ifdef INSTRUMENTED
+//                , file, line
+// #endif
+//       );
+//     Z_FreeTags(PU_CACHE,PU_CACHE);
+//   }
+
+  if(tag == PU_CACHE){
+    while (!(block = malloc(size + HEADER_SIZE))) {
+      if (!blockbytag[PU_CACHE])
+        break;
+      Z_FreeTags(PU_CACHE,PU_CACHE);
+    }
   }
+
+  if(!block){
+    while (!(block = ps_malloc(size + HEADER_SIZE))) {
+      I_Error ("Z_Malloc: Failure trying to allocate %lu bytes",(unsigned long) size);
+    }
+  }
+
 
   if (!blockbytag[tag])
   {
